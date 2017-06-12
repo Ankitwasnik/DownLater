@@ -1,0 +1,304 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>DownLater</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
+		<link rel="stylesheet" href="assets/css/main.css" />
+                <link rel="stylesheet" href="assets/css/style.css" />
+                <link rel="stylesheet" href="assets/css/jquery-ui.min.css" />
+                <link rel="stylesheet" href="assets/css/jquery.timepicker.min.css" />
+                
+                
+		<!--[if lte IE 9]><link rel="stylesheet" href="assets/css/ie9.css" /><![endif]-->
+	</head>
+	<body>
+
+		<!-- Banner -->
+			<section id="banner">
+				<h2><strong>DownLater</strong> schedule your downloads</h2>
+				
+			</section>
+
+		<!-- One -->
+			<section id="one" class="wrapper special">
+				<div class="inner">
+					<header class="major">
+						<h2>Features</h2>
+					</header>
+					<div class="features">
+						<div class="feature">
+							<i class="fa fa-cloud-download"></i>
+							
+							<p>Download files at specified time</p>
+						</div>
+						<div class="feature">
+							<i class="fa fa-desktop"></i>
+							
+							<p>Works even when your device goes to sleep automatically.</p>
+						</div>
+						<div class="feature">
+							<i class="fa fa-copy"></i>
+							
+							<p>Schedule multiple files.</p>
+						</div>
+						<div class="feature">
+							<i class="fa fa-download"></i>
+							
+							<p>Schedule downloads for two days.</p>
+						</div>
+						<div class="feature">
+                                                    <img src="images/chrome" alt="chrome">
+                                                    <br><br>
+							<p>Currently works in google chrome only.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+		<!-- Two -->
+			<section id="two" class="wrapper style2 special">
+				<div class="inner narrow">
+					<header>
+						<h2>Schedule Now!</h2>
+					</header>
+					<div class="grid-form">
+						<div class="form-control">
+							<label for="link">Link</label>
+                                                        <input name="link" id="link" type="url">
+						</div>
+						<div class="form-control">
+							<label for="date">Date</label>
+                                                        <select id="date" name="date" class="center" >
+                                                            <option id="d1" value="date1">today</option>
+                                                            <option id="d2" value="date2">tomorrow</option>
+                                                        </select>
+							
+						</div>
+						<div class="form-control">
+							<label for="time">Time</label>
+							<input name="time" id="time">
+						</div>
+						<div class="form-control">
+                                                    <input id = "schedule_but" type="submit" class="secondary button" value="Schedule" style="background-color: #444; color: white;" onclick="schedule(document.getElementById('link').value, document.getElementById('date'), document.getElementById('time').value)">
+                                                </div>
+					</div>
+				</div>
+			</section>
+                
+            <div id ="table_div" style="display: none;">
+              <table id = "table1" class="center">
+                <thead>
+                    <tr id="table_title">
+                        <th>File Name</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     
+                 </tbody>
+            </table>
+
+      </div>
+              
+         <div id = "dialog-1" style="display: none" title = "Error">Please enter URL/Date/Time</div>
+        <div id = "dialog-2" style="display: none" title="Instruction">Keep this page open</div>
+        <div id = "dialog-3" style="display: none" title = "Enter correct time">Entered time already passed away</div>
+            
+                <script>
+                  
+            function schedule(link, date, time) {
+                
+                var scheduledTime;
+                var sIndex = date.selectedIndex;
+                date = date[date.selectedIndex].text;
+                if (!link || !date || !time) {
+                    $("#dialog-1").dialog({
+                        width:"50%",
+                        buttons: {OK: function () {
+                                $(this).dialog("close");
+                            }}
+                        
+                        
+                    });
+                    return;
+                }
+                if ((scheduledTime = check_time(date, time,sIndex)) < 0) {
+                    
+                    $("#dialog-3").dialog({
+                        width:"50%",
+                        buttons: {OK: function () {
+                                $(this).dialog("close");
+                            }}
+                    });
+                    return;
+                }
+                if (!/^(ht)tps?:\/\//i.test(link)) {
+                    link = "http://" + link;
+                }
+                append_table(link, date, time);
+                show_div();
+                var st;
+                download(link, scheduledTime,date,time);    
+            }
+            function check_time(date, time,selectedIndex) {
+                var scheduledTime;
+                var curr_date = new Date();
+                var utctime = 0;
+                var t = time.split(" ");
+                t = t[0].split(":");
+              var hrs=0;
+              if(parseInt(t[0]) !== 12){
+                 hrs = parseInt(t[0]);
+              }
+              
+              if (time.endsWith("PM")) {
+                 hrs = hrs + 12;
+                }
+              var d = date.split('/');
+              var dif = selectedIndex*24*60*60 + ((hrs - curr_date.getHours())*60*60) + ((parseInt(t[1]) - curr_date.getMinutes())*60) -(curr_date.getSeconds());
+                
+               if(dif< -60){return -1;} 
+               if(dif < 0 && dif > -60){return 0;}
+              return dif; 
+                                                                                               
+                                                                                              
+            }
+
+            function append_table(link, date, time) {
+                
+                var table = document.getElementById('table1').getElementsByTagName('tbody')[0];
+                
+                var row = table.insertRow(table.rows.length);
+                var name = row.insertCell(0);
+                //var size = row.insertCell(1);
+                var d = row.insertCell(1);
+                var t = row.insertCell(2);
+                var status = row.insertCell(3);
+                name.innerHTML = link.substr(link.lastIndexOf('/') + 1);
+                //size.innerHTML = "0mb";
+                d.innerHTML = date;
+                t.innerHTML = time;
+                status.innerHTML = "Pending";
+
+                $(function () {
+                    $("tr:odd").css("background-color", "white");
+                    $("tr:even").css("background-color", "rgb(225, 225, 225)");
+                    // $("#table_title").css("background-color","rgb(38, 51, 56)");
+                });
+            }
+
+            function show_div() {
+                document.getElementById('table_div').style.display = "block";
+                $("#dialog-2").dialog({
+                    width:"50%",
+                  
+                    buttons: {OK: function () {
+                            $(this).dialog("close");
+                        }}
+                });
+            }
+
+            function download(url, scheduledTime,date,time) {
+                return new_script(url, scheduledTime,date,time);
+               
+            }
+
+            function new_script(url, scheduledTime,date,time) {
+                //console.log(scheduledTime + "seconds"); 
+                setTimeout(function () {
+                    downloadFile(url);
+                    changeStatus(url,date,time);
+
+                }, scheduledTime * 1000);
+
+
+                window.downloadFile = function (sUrl) {
+                     
+                    //iOS devices do not support downloading. We have to inform user about this.
+                    if (/(iP)/g.test(navigator.userAgent)) {
+                        alert('Your device does not support files downloading. Please try again in desktop browser.');
+                        window.open(sUrl, '_blank');
+                        return false;
+                    }
+
+                    //If in Chrome or Safari - download via virtual link click
+                    if (window.downloadFile.isChrome || window.downloadFile.isSafari) {
+                        //Creating new link node.
+                        var link = document.createElement('a');
+                        link.href = sUrl;
+                        link.setAttribute('target', '_blank');
+
+                        if (link.download !== undefined) {
+                            //Set HTML5 download attribute. This will prevent file from opening if supported.
+                            var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
+                            //console.log(f + '\n' +fileName);
+                            link.download = fileName;
+                        }
+                            
+                        //Dispatching click event.
+                        if (document.createEvent) {
+                            var e = document.createEvent('MouseEvents');
+                            e.initEvent('click', true, true);
+                            link.dispatchEvent(e);
+                            return true;
+                        }
+                    }
+
+                    // Force file download (whether supported by server).
+                    if (sUrl.indexOf('?') === -1) {
+                        sUrl += '?download';
+                    }
+
+                    window.open(sUrl, '_blank');
+                    return true;
+                };
+
+                window.downloadFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+                window.downloadFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
+                return true;
+            }
+            
+            function changeStatus(link,date,time){
+                var table = document.getElementById('table1');
+                var length = table.rows.length;
+                
+                for(var i=1;i<length;i++){
+                    if((table.rows[i].cells[0].innerText === link.substring(link.lastIndexOf('/') + 1, link.length)) && (table.rows[i].cells[1].innerText === date) && (table.rows[i].cells[2].innerText === time) ){
+                        table.rows[i].cells[3].innerHTML = "Downloaded";
+                    }
+                }
+            }
+        </script>
+                
+
+		<!-- Footer -->
+			<footer id="footer">
+                                <div>
+                                    <ul id="footer_list">
+                                        <a href="about.html" target="_blank">About</a>
+                                        <a href="contact.html" target="_blank">Contact</a>
+                                    </ul>
+                                </div>
+				<div class="copyright">
+                                    DownLater.<br><br> Design: <a href="http://templated.co/" target="_blank">TEMPLATED</a>.
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+                        <script src="assets/js/custom.js"></script>
+                        <script src="assets/js/jquery-ui.min.js"></script>
+                        <script src="assets/js/custom.js"></script>
+                        <script src="assets/js/jquery.timepicker.min.js"></script>
+
+	</body>
+</html>
